@@ -18,6 +18,8 @@ import requests
 from geopy import Point
 from geopy.distance import vincenty, VincentyDistance
 
+log = logging.getLogger("crawler")
+
 # urls for google api web service
 BASE_URL = "https://maps.googleapis.com/maps/api/place/"
 RADAR_URL = BASE_URL + "radarsearch/json?location={},{}&radius={}&types={}&key={}"
@@ -178,7 +180,7 @@ def get_radar(item):
 
     item["res"] += len(radar)
     if item["res"] >= 60:
-        logging.warning("Result limit in search radius reached, some data may get lost")
+        log.warning("Result limit in search radius reached, some data may get lost")
 
     bounds = params["bounds"]
 
@@ -352,7 +354,7 @@ def get_populartimes_from_search(place_identifier):
     }
 
     search_url = "https://www.google.de/search?" + "&".join(k + "=" + str(v) for k, v in params_url.items())
-    logging.info("searchterm: " + search_url)
+    log.info("searchterm: " + search_url)
 
     # noinspection PyUnresolvedReferences
     gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
@@ -503,7 +505,7 @@ def run(_params):
     q_radar, q_detail = Queue(), Queue()
     g_places, results = dict(), list()
 
-    logging.info("Adding places to queue...")
+    log.info("Adding places to queue...")
 
     # threading for radar search
     for i in range(params["n_threads"]):
@@ -519,9 +521,9 @@ def run(_params):
         q_radar.put(dict(pos=(lat, lng), res=0))
 
     q_radar.join()
-    logging.info("Finished in: {}".format(str(datetime.datetime.now() - start)))
+    log.info("Finished in: {}".format(str(datetime.datetime.now() - start)))
 
-    logging.info("{} places to process...".format(len(g_places)))
+    log.info("{} places to process...".format(len(g_places)))
 
     # threading for detail search and popular times
     for i in range(params["n_threads"]):
@@ -533,6 +535,6 @@ def run(_params):
         q_detail.put(g_place_id)
 
     q_detail.join()
-    logging.info("Finished in: {}".format(str(datetime.datetime.now() - start)))
+    log.info("Finished in: {}".format(str(datetime.datetime.now() - start)))
 
     return results
